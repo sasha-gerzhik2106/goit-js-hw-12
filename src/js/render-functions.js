@@ -39,5 +39,5 @@ export function renderMarkup(arr, galleryEl) {
         }
       )
       .join('');
-    galleryEl.insertAdjacentHTML('afterbegin', markup);
+    galleryEl.insertAdjacentHTML('beforeend', markup);
   }
