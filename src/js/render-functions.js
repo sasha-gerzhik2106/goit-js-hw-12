@@ -10,8 +10,8 @@ export function renderMarkup(arr, galleryEl) {
           comments,
           downloads,
         }) => {
-          return `
-              <li class="gallery-list-item">
+         const li = document.createElement("li");
+         li.innerHTML =`
                   <a class="gallery_link" href="${largeImageURL}">
                       <img class="gallery_img" src="${webformatURL}" 
                           alt="${tags}" 
@@ -35,9 +35,19 @@ export function renderMarkup(arr, galleryEl) {
                           </li>
                       </ul>
                   </a>
-              </li>`;
+              `;
+              li.classList.add('gallery-list-item');
+              return li;
         }
-      )
-      .join('');
-    galleryEl.insertAdjacentHTML('beforeend', markup);
+      );
+    galleryEl.append(...markup);
+    const firstElement = markup[0];
+    if(firstElement){
+        const rect = firstElement.getBoundingClientRect();
+        window.scrollBy({
+            top: rect.top,
+            left: 0,
+            behavior: "smooth",
+          });
+    }
   }

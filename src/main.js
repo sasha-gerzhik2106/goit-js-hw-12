@@ -1,92 +1,86 @@
-// Importing libraries
+//library 1
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
+
+//library 2
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+
 import axios from 'axios';
 
-// Imports from folder JS
+//imports from folder JS
 import { search } from './js/pixabay-api';
 import { renderMarkup } from './js/render-functions';
 
-// DOM elements
 const galleryList = document.querySelector('.gallery-list');
 const form = document.querySelector('form');
 const loader = document.querySelector('.loader');
+let lightbox = new SimpleLightbox('.gallery-list a', {});
 const loadMoreImagesButton = document.querySelector('.load-more');
 
-// Initializing SimpleLightbox
-const lightbox = new SimpleLightbox('.gallery-list a', {});
-
-// Search and pagination state
-let searchQuery = '';
-const perPage = 15;
-let currentPage = 1;
-let totalHits = null;
-
-// Function to load images
-async function loadImages(searchQuery, page, perPage) {
-  loader.style.display = 'block';
-
-  try {
-    // Check if we've reached the end of search results
-    if (totalHits !== null && page * perPage >= totalHits) {
-      iziToast.warning({
-        message: "We're sorry, but you've reached the end of search results.",
-      });
-      return;
+function elementForSearch() {
+  let searchQuery = "";
+  const per_page = 15;
+  let page = 1;
+  let totalHits = null;
+  async function loadImages(searchQuery, page, per_page){
+    loader.style.display = 'block';
+    loadMoreImagesButton.style.visibility = "hidden";
+   try{
+    if(totalHits !== null && page * per_page >= totalHits){
+      return iziToast.warning({
+        message: "We're sorry, but you've reached the end of search results."
+            })
     }
+    const response = await search(searchQuery, page, per_page)
+      //if are not results
+      if (response.hits.length === 0) {
+        iziToast.info({
+          message:
+            'Sorry, there are no images matching your search query. Please try again!',
+        });
+        //markup generation and gallery update
+      } else {
+        totalHits = response.totalHits;
+        if(totalHits / per_page > page){
+          loadMoreImagesButton.style.visibility = "visible";
+        }
+        renderMarkup(response.hits, galleryList);
+        lightbox.refresh();
+      }
+   } catch (error) {
+      iziToast.error({ message: error.message });
+    } finally {
+      loader.style.display = 'none';
+    };
+  };
+  
+    form.addEventListener('submit',  async event => {
+    event.preventDefault();
+    searchQuery = event.target.elements.choiceSearch.value
+      .toLowerCase()
+      .trim();
 
-    const response = await search(searchQuery, page, perPage);
-
-    // Handle no results
-    if (response.hits.length === 0) {
-      iziToast.info({
-        message: 'Sorry, there are no images matching your search query. Please try again!',
-      });
+    //checking for an empty input
+    if (!searchQuery) {
+      iziToast.error({ message: 'Please enter a search word.' });
       return;
-    }
+    }else{
+    // clearing past results
+    galleryList.innerHTML = '';
+	}
+  page = 1;
+  totalHits = null;
+  await loadImages(searchQuery, page, per_page);
+  
+  
+  });
+  loadMoreImagesButton.addEventListener('click', async () => {
+   
+    page += 1;
+    await loadImages(searchQuery, page, per_page);
+  })
 
-    // Update totalHits and render the results
-    totalHits = response.totalHits;
-    renderMarkup(response.hits, galleryList);
-    lightbox.refresh();
-  } catch (error) {
-    iziToast.error({ message: error.message });
-  } finally {
-    loader.style.display = 'none';
-  }
 }
 
-// Event listener for form submission
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  searchQuery = event.target.elements.choiceSearch.value.trim().toLowerCase();
-
-  // Validate search query
-  if (!searchQuery) {
-    iziToast.error({ message: 'Please enter a search word.' });
-    return;
-  }
-
-  // Clear previous results and reset state
-  galleryList.innerHTML = '';
-  currentPage = 1;
-  totalHits = null;
-
-  // Load initial results
-  await loadImages(searchQuery, currentPage, perPage);
-
-  // Show "Load More" button if results exist
-  loadMoreImagesButton.style.visibility = 'visible';
-});
-
-// Event listener for "Load More" button
-loadMoreImagesButton.addEventListener('click', async () => {
-  currentPage += 1;
-  loadMoreImagesButton.style.visibility = 'hidden';
-
-  await loadImages(searchQuery, currentPage, perPage);
-
-  loadMoreImagesButton.style.visibility = 'visible';
-});
+elementForSearch();
