@@ -27,7 +27,7 @@ function elementForSearch() {
     loader.style.display = 'block';
     loadMoreImagesButton.style.visibility = "hidden";
    try{
-    if(totalHits !== null && page * per_page >= totalHits){
+    if(totalHits !== null && page > Math.ceil(totalHits / per_page)){
       return iziToast.warning({
         message: "We're sorry, but you've reached the end of search results."
             })
